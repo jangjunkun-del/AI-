@@ -69,6 +69,7 @@ const App: React.FC = () => {
     const updatedDrawings = { ...drawings, person: img };
     setDrawings(updatedDrawings);
     changeStep('analyzing');
+    setError(null);
 
     try {
       const analysis = await analyzeDrawings(updatedDrawings);
@@ -81,7 +82,8 @@ const App: React.FC = () => {
       saveToHistory(finalResult);
       changeStep('result');
     } catch (err: any) {
-      setError("심리 분석 엔진에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      console.error("Analysis failed:", err);
+      setError(err.message || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
       changeStep('intro');
     }
   };
@@ -101,26 +103,11 @@ const App: React.FC = () => {
           따뜻한 시선으로 분석하고 있습니다.
         </p>
       </div>
-      <div className="flex gap-10">
-        <div className="flex flex-col items-center gap-3">
-          <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-400 animate-bounce"><CloudRain /></div>
-          <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Emotion</span>
-        </div>
-        <div className="flex flex-col items-center gap-3">
-          <div className="p-4 bg-amber-50 rounded-2xl text-amber-500 animate-bounce delay-150"><Sun /></div>
-          <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Self</span>
-        </div>
-        <div className="flex flex-col items-center gap-3">
-          <div className="p-4 bg-sky-50 rounded-2xl text-sky-400 animate-bounce delay-300"><Wind /></div>
-          <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Relation</span>
-        </div>
-      </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col selection:bg-indigo-100">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-6 py-5 sm:px-12 no-print">
         <div className="max-w-7xl mx-auto flex items-center justify-between w-full">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => changeStep('intro')}>
@@ -134,18 +121,9 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <button 
-              onClick={shareApp} 
-              className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all"
-              title="공유하기"
-            >
-              <Share2 size={20} />
-            </button>
+            <button onClick={shareApp} className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all"><Share2 size={20} /></button>
             {history.length > 0 && (
-              <button 
-                onClick={() => changeStep('history')} 
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all ${step === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm'}`}
-              >
+              <button onClick={() => changeStep('history')} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all ${step === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm'}`}>
                 <History size={16} /> <span className="hidden sm:inline">나의 이력</span>
               </button>
             )}
@@ -155,105 +133,49 @@ const App: React.FC = () => {
 
       <main className={`flex-1 container mx-auto px-4 pb-24 transition-all duration-500 ease-in-out ${isTransitioning ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
         {error && (
-          <div className="max-w-md mx-auto mt-8 p-5 bg-rose-50 border border-rose-100 text-rose-600 rounded-[2rem] text-sm flex items-center gap-4 animate-in slide-in-from-top-4 font-bold shadow-sm">
-            <Info size={20} /> {error}
+          <div className="max-w-xl mx-auto mt-8 p-6 bg-rose-50 border border-rose-100 text-rose-600 rounded-[2rem] text-sm flex items-start gap-4 animate-in slide-in-from-top-4 font-bold shadow-md">
+            <Info size={24} className="shrink-0 mt-0.5" /> 
+            <div className="flex-1">
+              <p className="text-base mb-1">분석 중 오류가 발생했습니다:</p>
+              <p className="opacity-80 font-mono text-xs bg-white/50 p-2 rounded-lg">{error}</p>
+            </div>
           </div>
         )}
 
         {step === 'intro' && (
           <div className="max-w-5xl mx-auto space-y-24 py-16 md:py-32">
             <div className="text-center space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-              <div className="inline-block px-6 md:px-8 py-2 md:py-2.5 bg-indigo-50 text-indigo-600 text-[10px] md:text-[11px] font-black rounded-full uppercase tracking-[0.2em] md:tracking-[0.3em] border border-indigo-100 shadow-sm">
-                Advanced AI Art Therapy
-              </div>
-              
-              {/* 제목 겹침 해결: 모바일 폰트 크기 및 행간 최적화 */}
+              <div className="inline-block px-8 py-2.5 bg-indigo-50 text-indigo-600 text-[11px] font-black rounded-full uppercase tracking-[0.3em] border border-indigo-100 shadow-sm">Advanced AI Art Therapy</div>
               <h2 className="text-5xl md:text-8xl lg:text-[10rem] font-black text-slate-900 leading-[1.15] md:leading-[1.0] tracking-tight break-keep px-4">
                 말하지 못한 마음,<br className="hidden md:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-500">그림에 담다.</span>
               </h2>
-              
-              <p className="text-lg md:text-3xl text-slate-500 max-w-2xl mx-auto leading-relaxed break-keep font-medium opacity-80 px-4">
-                낙서하듯 그린 그림 속에 당신의 진짜 이야기가 있습니다.<br/>
-                최신 AI 기술로 당신의 내면을 안아보세요.
-              </p>
-              
-              <div className="pt-8 md:pt-12">
-                <button
-                  onClick={startTest}
-                  className="group relative px-12 md:px-24 py-6 md:py-10 bg-slate-900 text-white text-2xl md:text-4xl font-black rounded-[2.5rem] md:rounded-[4rem] shadow-xl md:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] hover:bg-indigo-600 hover:-translate-y-2 transition-all active:scale-95 flex items-center gap-4 md:gap-8 mx-auto overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <div className="pt-8">
+                <button onClick={startTest} className="group relative px-12 md:px-24 py-6 md:py-10 bg-slate-900 text-white text-2xl md:text-4xl font-black rounded-[2.5rem] md:rounded-[4rem] shadow-xl hover:bg-indigo-600 hover:-translate-y-2 transition-all active:scale-95 flex items-center gap-4 md:gap-8 mx-auto">
                   무료 분석 시작 <ArrowRight size={28} className="md:w-10 md:h-10 group-hover:translate-x-4 transition-transform" />
                 </button>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 px-4 md:px-0">
-              {[
-                { step: "House", title: "나의 환경, 집", desc: "나를 감싸는 외부 환경과 자아의 안정성을 분석합니다.", color: "text-blue-600", bg: "bg-blue-50" },
-                { step: "Tree", title: "성장 에너지, 나무", desc: "내면의 무의식적 에너지와 삶의 역동성을 탐구합니다.", color: "text-emerald-600", bg: "bg-emerald-50" },
-                { step: "Person", title: "사회적 자아, 사람", desc: "사회적 관계 속의 나의 모습과 태도를 읽어냅니다.", color: "text-purple-600", bg: "bg-purple-50" }
-              ].map((item, i) => (
-                <div key={i} className="p-10 md:p-16 bg-white rounded-[2.5rem] md:rounded-[4rem] shadow-2xl shadow-slate-100/50 border border-slate-50 hover:shadow-indigo-100/50 hover:border-indigo-100 transition-all group cursor-default">
-                  <span className={`inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-[10px] md:text-[12px] font-black uppercase mb-6 md:mb-10 tracking-widest ${item.bg} ${item.color}`}>{item.step}</span>
-                  <h4 className="text-2xl md:text-4xl font-black text-slate-900 mb-4 md:mb-8 group-hover:text-indigo-600 transition-colors">{item.title}</h4>
-                  <p className="text-slate-500 text-sm md:text-xl leading-relaxed break-keep opacity-80 font-medium">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-            
-            <div className="bg-white rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-12 border border-slate-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10 mx-4 md:mx-0">
-              <div className="flex items-center gap-6 md:gap-8 text-center md:text-left">
-                <div className="hidden md:flex w-20 h-20 bg-indigo-50 rounded-[2rem] items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
-                  <Sparkles className="text-indigo-500" size={40} />
-                </div>
-                <div>
-                  <h5 className="text-xl md:text-2xl font-black text-slate-900">전문 상담 솔루션</h5>
-                  <p className="text-slate-500 text-sm md:text-lg font-medium">상담 센터 및 교육 기관용 API 제휴 문의</p>
-                </div>
-              </div>
-              <a href="mailto:codingfun05@gmail.com" className="w-full md:w-auto flex items-center justify-center gap-4 px-8 md:px-10 py-4 md:py-5 bg-indigo-600 rounded-2xl md:rounded-3xl text-base md:text-lg font-black text-white hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100">
-                제휴 문의하기 <ExternalLink size={20} />
-              </a>
             </div>
           </div>
         )}
 
         {step === 'history' && (
           <div className="max-w-4xl mx-auto space-y-16 py-20 animate-in slide-in-from-right duration-700">
-            <div className="flex items-center justify-between px-4 md:px-0">
+            <div className="flex items-center justify-between px-4">
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">나의 기록들</h2>
-              <button onClick={() => changeStep('intro')} className="px-6 md:px-10 py-3 md:py-4 rounded-2xl md:rounded-[2rem] bg-white border border-slate-200 text-sm md:text-lg font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm">닫기</button>
+              <button onClick={() => changeStep('intro')} className="px-6 py-3 rounded-2xl bg-white border border-slate-200 font-black text-slate-600">닫기</button>
             </div>
             {history.length === 0 ? (
-              <div className="mx-4 md:mx-0 text-center py-32 bg-white rounded-[2.5rem] md:rounded-[4rem] border-4 border-dashed border-slate-100">
-                <p className="text-slate-300 text-xl md:text-2xl font-black">아직 분석한 그림이 없습니다.</p>
+              <div className="mx-4 text-center py-32 bg-white rounded-[4rem] border-4 border-dashed border-slate-100">
+                <p className="text-slate-300 text-2xl font-black">아직 분석한 그림이 없습니다.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 px-4 md:px-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 px-4">
                 {history.map(item => (
-                  <div 
-                    key={item.id} 
-                    onClick={() => { setResult(item); changeStep('result'); }}
-                    className="p-8 md:p-12 bg-white rounded-[2.5rem] md:rounded-[4rem] border border-slate-50 shadow-2xl shadow-slate-100/50 hover:border-indigo-200 hover:shadow-indigo-100/30 cursor-pointer transition-all relative group overflow-hidden"
-                  >
-                    <div className="flex items-center gap-4 mb-6 md:mb-10">
-                      <div className="p-3 bg-indigo-50 text-indigo-500 rounded-xl"><Calendar size={20}/></div>
-                      <span className="text-sm md:text-base font-black text-slate-400">{new Date(item.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <h4 className="font-black text-slate-900 line-clamp-2 text-xl md:text-3xl mb-6 md:mb-10 leading-snug">{item.summary}</h4>
-                    <div className="flex flex-wrap gap-2 md:gap-3">
-                      {item.personalityTraits.slice(0, 3).map(t => (
-                        <span key={t.trait} className="px-3 md:px-5 py-1 md:py-2 bg-slate-50 text-slate-600 text-[10px] md:text-sm font-black rounded-full border border-slate-100">#{t.trait}</span>
-                      ))}
-                    </div>
-                    <button 
-                      onClick={(e) => deleteHistoryItem(item.id, e)}
-                      className="absolute top-6 md:top-10 right-6 md:right-10 p-3 md:p-4 text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl md:rounded-[1.5rem] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
-                    >
-                      <Trash2 size={24} />
-                    </button>
+                  <div key={item.id} onClick={() => { setResult(item); changeStep('result'); }} className="p-12 bg-white rounded-[4rem] border border-slate-50 shadow-2xl hover:border-indigo-200 cursor-pointer transition-all relative group">
+                    <h4 className="font-black text-slate-900 line-clamp-2 text-2xl mb-6">{item.summary}</h4>
+                    <span className="text-sm font-black text-slate-400">{new Date(item.date).toLocaleDateString()}</span>
+                    <button onClick={(e) => deleteHistoryItem(item.id, e)} className="absolute top-10 right-10 p-4 text-slate-200 hover:text-rose-500 transition-all"><Trash2 size={24} /></button>
                   </div>
                 ))}
               </div>
@@ -261,30 +183,12 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {step === 'house' && <DrawingBoard title="집을 그려보세요" instruction="당신의 무의식적인 환경적 안정성을 보여주는 집을 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, house: img})); changeStep('tree'); }} />}
-        {step === 'tree' && <DrawingBoard title="나무를 그려보세요" instruction="당신의 에너지와 자아의 성장을 보여주는 나무를 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, tree: img})); changeStep('person'); }} />}
-        {step === 'person' && <DrawingBoard title="사람을 그려보세요" instruction="사회 속에서 인식하는 자신의 모습인 사람을 그려주세요." onComplete={handlePersonComplete} />}
+        {step === 'house' && <DrawingBoard title="집을 그려보세요" instruction="안정성을 보여주는 집을 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, house: img})); changeStep('tree'); }} />}
+        {step === 'tree' && <DrawingBoard title="나무를 그려보세요" instruction="에너지를 보여주는 나무를 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, tree: img})); changeStep('person'); }} />}
+        {step === 'person' && <DrawingBoard title="사람을 그려보세요" instruction="사회적 자아인 사람을 그려주세요." onComplete={handlePersonComplete} />}
         {step === 'analyzing' && renderLoading()}
         {step === 'result' && result && <AnalysisDisplay result={result} onRestart={startTest} />}
       </main>
-
-      <footer className="py-16 md:py-24 px-6 md:px-12 text-center text-slate-400 text-sm no-print border-t border-slate-100 bg-white">
-        <div className="max-w-7xl mx-auto space-y-12 md:space-y-16">
-          <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-12 text-sm md:text-lg font-black text-slate-400">
-            <span className="cursor-pointer hover:text-indigo-600 transition-colors">서비스 이용약관</span>
-            <span className="hidden md:block w-2 h-2 bg-slate-100 rounded-full"></span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors text-slate-600">개인정보처리방침</span>
-            <span className="hidden md:block w-2 h-2 bg-slate-100 rounded-full"></span>
-            <span className="cursor-pointer hover:text-indigo-600 transition-colors">기관 제휴</span>
-            <span className="hidden md:block w-2 h-2 bg-slate-100 rounded-full"></span>
-            <a href="mailto:codingfun05@gmail.com" className="flex items-center gap-2 hover:text-indigo-600 transition-colors"><Mail size={18} /> codingfun05@gmail.com</a>
-          </div>
-          <div className="space-y-3 md:space-y-4">
-            <p className="font-black text-slate-900 tracking-[0.2em] md:tracking-[0.4em] uppercase text-xl md:text-2xl">MindSketch AI</p>
-            <p className="opacity-50 text-xs md:text-base font-medium">&copy; {new Date().getFullYear()} MindSketch. All Rights Reserved. Powered by Gemini 3.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

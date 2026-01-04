@@ -191,7 +191,7 @@ const App: React.FC = () => {
                   <p className="text-sm text-slate-500">기관 및 상담소 제휴 문의 환영</p>
                 </div>
               </div>
-              <a href="mailto:contact@mindsketch.com" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+              <a href="mailto:codingfun05@gmail.com" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
                 제휴 문의 <ExternalLink size={14} />
               </a>
             </div>
@@ -249,12 +249,10 @@ const App: React.FC = () => {
             <span className="w-1 h-1 bg-slate-200 rounded-full hidden md:block"></span>
             <span className="cursor-pointer hover:text-indigo-600 transition-colors">광고 문의</span>
             <span className="w-1 h-1 bg-slate-200 rounded-full hidden md:block"></span>
-            <a href="mailto:contact@mindsketch.com" className="flex items-center gap-1 hover:text-indigo-600 transition-colors"><Mail size={12} /> contact@mindsketch.com</a>
+            <a href="mailto:codingfun05@gmail.com" className="flex items-center gap-1 hover:text-indigo-600 transition-colors"><Mail size={12} /> codingfun05@gmail.com</a>
           </div>
           <div className="space-y-2 opacity-80">
             <p className="font-black text-slate-500 tracking-widest uppercase text-sm mb-1">MindSketch AI</p>
-            <p>사업자 등록번호: 000-00-00000 | 대표: 홍길동</p>
-            <p>서울특별시 성동구 아차산로 (마인드빌딩 3층)</p>
             <p className="mt-4">&copy; {new Date().getFullYear()} MindSketch. All Rights Reserved. Powered by Gemini Flash 3.</p>
           </div>
         </div>

@@ -1,31 +1,32 @@
-
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
-// API 키는 환경 변수 process.env.API_KEY에서 직접 가져옵니다.
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
   // 매 호출마다 새로운 인스턴스를 생성하여 최신 API 키 상태를 반영합니다.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const modelName = "gemini-3-pro-preview";
+  const modelName = "gemini-3-flash-preview";
   
   const houseBase64 = data.house?.split(',')[1];
   const treeBase64 = data.tree?.split(',')[1];
   const personBase64 = data.person?.split(',')[1];
 
-  const contents = {
-    parts: [
-      { text: "당신은 전문 미술 치료사이자 심리학자입니다. 제공된 HTP(House-Tree-Person) 그림들을 심리학적으로 분석해주세요. 첫 번째는 집, 두 번째는 나무, 세 번째는 사람입니다. 선의 특징, 크기, 위치, 세부 요소를 분석하여 심층적인 심리 분석 결과를 한국어로 제공하세요. 반드시 제공된 JSON 스키마 형식에 맞춰 응답해야 합니다." },
-      { inlineData: { mimeType: "image/png", data: houseBase64 || "" } },
-      { inlineData: { mimeType: "image/png", data: treeBase64 || "" } },
-      { inlineData: { mimeType: "image/png", data: personBase64 || "" } },
-    ]
-  };
+  const contents = [
+    {
+      role: "user",
+      parts: [
+        { text: "당신은 전문 미술 치료사이자 심리학자입니다. 제공된 HTP(House-Tree-Person) 그림들을 심리학적으로 분석해주세요. 첫 번째는 집, 두 번째는 나무, 세 번째는 사람입니다. 선의 특징, 크기, 위치, 세부 요소를 분석하여 심층적인 심리 분석 결과를 한국어로 제공하세요. 반드시 제공된 JSON 스키마 형식에 맞춰 응답해야 합니다." },
+        { inlineData: { mimeType: "image/png", data: houseBase64 || "" } },
+        { inlineData: { mimeType: "image/png", data: treeBase64 || "" } },
+        { inlineData: { mimeType: "image/png", data: personBase64 || "" } },
+      ]
+    }
+  ];
 
   const response = await ai.models.generateContent({
     model: modelName,
     contents,
     config: {
-      thinkingConfig: { thinkingBudget: 32768 }, // 심층적 추론을 위한 예산 설정
+      thinkingConfig: { thinkingBudget: 0 }, // 빠른 응답을 위해 0으로 설정하거나 생략 가능
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -67,7 +68,7 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
 
 export const createCounselorChat = (result: AnalysisResult): Chat => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const model = 'gemini-3-pro-preview';
+  const model = 'gemini-3-flash-preview';
   
   const systemInstruction = `당신은 따뜻하고 공감 능력이 뛰어난 전문 AI 심리 상담사 '마인드 가이드'입니다. 
   사용자의 HTP 분석 결과(${result.summary})를 바탕으로 대화하세요. 
@@ -76,7 +77,6 @@ export const createCounselorChat = (result: AnalysisResult): Chat => {
   return ai.chats.create({
     model,
     config: {
-      thinkingConfig: { thinkingBudget: 16384 }, // 대화 시에도 더 나은 공감을 위한 사고 설정
       systemInstruction,
     },
   });

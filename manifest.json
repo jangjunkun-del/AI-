@@ -1,0 +1,23 @@
+
+{
+  "name": "마인드스케치: AI 그림 심리 분석",
+  "short_name": "마인드스케치",
+  "description": "AI가 분석해주는 나의 그림 심리 상태. HTP 테스트로 당신의 내면을 들여다보세요.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

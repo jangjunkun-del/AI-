@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Palette, ArrowRight, Loader2, CloudRain, Sun, Wind, History, Trash2, Calendar, Share2, Info } from 'lucide-react';
+import { Sparkles, Palette, ArrowRight, Loader2, CloudRain, Sun, Wind, History, Trash2, Calendar, Share2, Info, Mail, ExternalLink } from 'lucide-react';
 import DrawingBoard from './components/DrawingBoard';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
@@ -71,7 +71,7 @@ const App: React.FC = () => {
       saveToHistory(finalResult);
       setStep('result');
     } catch (err) {
-      setError("심리 분석 엔진에 연결할 수 없습니다. 다시 시도해 주세요.");
+      setError("심리 분석 엔진에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
       setStep('intro');
     }
   };
@@ -144,15 +144,15 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto space-y-16 py-12">
             <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
               <div className="inline-block px-5 py-2 bg-indigo-50 text-indigo-700 text-xs font-black rounded-full uppercase tracking-[0.15em] border border-indigo-100">
-                AI 기반 심리 솔루션
+                Official Release v1.0
               </div>
               <h2 className="text-5xl md:text-8xl font-black text-slate-900 leading-[1.05] tracking-tight break-keep">
-                말하지 못한<br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500">진심</span>을 마주하다
+                내 그림 속<br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500">숨은 이야기</span>
               </h2>
               <p className="text-lg md:text-xl text-slate-500 max-w-xl mx-auto leading-relaxed break-keep font-medium">
-                그림 한 점에 담긴 당신의 무의식.<br/>
-                전문적인 HTP 테스트를 통해 더 깊은 나를 발견해보세요.
+                그림 한 점으로 시작하는 심리 여행.<br/>
+                전문적인 HTP 테스트 데이터로 학습된 AI가 당신을 안내합니다.
               </p>
               
               <div className="pt-6">
@@ -161,7 +161,7 @@ const App: React.FC = () => {
                   className="group relative px-16 py-7 bg-slate-900 text-white text-2xl font-black rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.25)] hover:bg-indigo-600 hover:-translate-y-2 transition-all active:scale-95 flex items-center gap-5 mx-auto overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                  테스트 시작 <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                  무료로 시작하기 <ArrowRight className="group-hover:translate-x-2 transition-transform" />
                 </button>
               </div>
             </div>
@@ -178,6 +178,22 @@ const App: React.FC = () => {
                   <p className="text-slate-500 text-base leading-relaxed break-keep">{item.desc}</p>
                 </div>
               ))}
+            </div>
+            
+            {/* 상업용 파트너십 영역 (배너 자리) */}
+            <div className="bg-slate-100/50 rounded-[2.5rem] p-8 border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <Sparkles className="text-indigo-500" />
+                </div>
+                <div>
+                  <h5 className="font-bold text-slate-800">심리 전문가와 협업하세요</h5>
+                  <p className="text-sm text-slate-500">기관 및 상담소 제휴 문의 환영</p>
+                </div>
+              </div>
+              <a href="mailto:contact@mindsketch.com" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                제휴 문의 <ExternalLink size={14} />
+              </a>
             </div>
           </div>
         )}
@@ -224,14 +240,24 @@ const App: React.FC = () => {
         {step === 'result' && result && <AnalysisDisplay result={result} onRestart={startTest} />}
       </main>
 
-      <footer className="py-16 text-center text-slate-400 text-xs no-print border-t border-slate-100">
-        <div className="flex justify-center gap-6 mb-4">
-          <span className="cursor-pointer hover:text-slate-600 transition-colors">이용약관</span>
-          <span className="cursor-pointer hover:text-slate-600 transition-colors font-bold text-indigo-500">개인정보처리방침</span>
-          <span className="cursor-pointer hover:text-slate-600 transition-colors">문의하기</span>
+      <footer className="py-16 px-6 text-center text-slate-400 text-xs no-print border-t border-slate-100 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-8">
+            <span className="cursor-pointer hover:text-indigo-600 transition-colors">이용약관</span>
+            <span className="w-1 h-1 bg-slate-200 rounded-full hidden md:block"></span>
+            <span className="cursor-pointer hover:text-indigo-600 transition-colors font-bold text-slate-600">개인정보처리방침</span>
+            <span className="w-1 h-1 bg-slate-200 rounded-full hidden md:block"></span>
+            <span className="cursor-pointer hover:text-indigo-600 transition-colors">광고 문의</span>
+            <span className="w-1 h-1 bg-slate-200 rounded-full hidden md:block"></span>
+            <a href="mailto:contact@mindsketch.com" className="flex items-center gap-1 hover:text-indigo-600 transition-colors"><Mail size={12} /> contact@mindsketch.com</a>
+          </div>
+          <div className="space-y-2 opacity-80">
+            <p className="font-black text-slate-500 tracking-widest uppercase text-sm mb-1">MindSketch AI</p>
+            <p>사업자 등록번호: 000-00-00000 | 대표: 홍길동</p>
+            <p>서울특별시 성동구 아차산로 (마인드빌딩 3층)</p>
+            <p className="mt-4">&copy; {new Date().getFullYear()} MindSketch. All Rights Reserved. Powered by Gemini Flash 3.</p>
+          </div>
         </div>
-        <p className="font-black mb-1 text-slate-500 tracking-widest uppercase">MindSketch Art Therapy Tool</p>
-        <p>&copy; {new Date().getFullYear()} MindSketch. Built with Gemini 3 Flash Pro.</p>
       </footer>
     </div>
   );

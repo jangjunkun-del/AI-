@@ -1,15 +1,13 @@
+
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
+// Professional HTP (House-Tree-Person) analysis is a complex reasoning task.
+// Using 'gemini-3-pro-preview' for better psychological insights as per guidelines for complex tasks.
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey || apiKey.trim() === "" || apiKey === "undefined") {
-    throw new Error("API 키가 설정되지 않았습니다. 클라우드플레어 환경 변수(API_KEY)를 확인해 주세요.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
-  const modelName = "gemini-3-flash-preview";
+  // Always use the recommended initialization pattern with process.env.API_KEY.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const modelName = "gemini-3-pro-preview";
   
   const houseBase64 = data.house?.split(',')[1];
   const treeBase64 = data.tree?.split(',')[1];
@@ -19,22 +17,17 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     throw new Error("그림 데이터가 누락되었습니다. 모든 그림을 그려주세요.");
   }
 
-  const contents = [
-    {
-      role: "user",
-      parts: [
-        { text: "당신은 전문 미술 치료사입니다. 제공된 HTP 그림(집, 나무, 사람 순서)을 분석하여 심리 결과를 한국어로 제공하세요. 반드시 JSON 형식을 지켜주세요." },
-        { inlineData: { mimeType: "image/png", data: houseBase64 } },
-        { inlineData: { mimeType: "image/png", data: treeBase64 } },
-        { inlineData: { mimeType: "image/png", data: personBase64 } },
-      ]
-    }
-  ];
-
   try {
     const response = await ai.models.generateContent({
       model: modelName,
-      contents,
+      contents: {
+        parts: [
+          { text: "당신은 전문 미술 치료사입니다. 제공된 HTP 그림(집, 나무, 사람 순서)을 분석하여 심리 결과를 한국어로 제공하세요. 반드시 JSON 형식을 지켜주세요." },
+          { inlineData: { mimeType: "image/png", data: houseBase64 } },
+          { inlineData: { mimeType: "image/png", data: treeBase64 } },
+          { inlineData: { mimeType: "image/png", data: personBase64 } },
+        ]
+      },
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -67,20 +60,19 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
   } catch (error: any) {
     console.error("Gemini Error Details:", error);
     const msg = error?.message || "알 수 없는 오류";
-    if (msg.includes("403") || msg.includes("API key")) {
-      throw new Error("API 키 권한 오류가 발생했습니다. 키가 활성화되었는지 확인하세요.");
-    }
     throw new Error(`분석 중 오류 발생: ${msg}`);
   }
 };
 
+// Psychological counseling is a complex task requiring high-quality reasoning.
+// Using 'gemini-3-pro-preview' for more professional and empathetic conversational analysis.
 export const createCounselorChat = (result: AnalysisResult): Chat => {
-  const apiKey = process.env.API_KEY || "";
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize right before making the call as per recommended best practices.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return ai.chats.create({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview',
     config: {
-      systemInstruction: `분석 결과(${result.summary})를 바탕으로 따뜻하게 상담해주는 상담사입니다.`,
+      systemInstruction: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 따뜻하게 위로하고 전문적으로 상담해주는 미술 치료 상담사입니다.`,
     },
   });
 };

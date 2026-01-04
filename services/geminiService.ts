@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
@@ -24,6 +25,7 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     model: modelName,
     contents,
     config: {
+      thinkingConfig: { thinkingBudget: 32768 }, // 심층적 추론을 위한 예산 설정
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -74,6 +76,7 @@ export const createCounselorChat = (result: AnalysisResult): Chat => {
   return ai.chats.create({
     model,
     config: {
+      thinkingConfig: { thinkingBudget: 16384 }, // 대화 시에도 더 나은 공감을 위한 사고 설정
       systemInstruction,
     },
   });

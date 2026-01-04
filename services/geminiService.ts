@@ -2,11 +2,9 @@ import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
 // API 키는 환경 변수 process.env.API_KEY에서 직접 가져옵니다.
-// 가이드라인에 따라 반드시 객체 형태로 전달하며, fallback은 사용하지 않습니다.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
-  // 복잡한 심리 추론을 위해 고성능 모델인 gemini-3-pro-preview를 사용합니다.
+  // 매 호출마다 새로운 인스턴스를 생성하여 최신 API 키 상태를 반영합니다.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = "gemini-3-pro-preview";
   
   const houseBase64 = data.house?.split(',')[1];
@@ -36,7 +34,7 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
             items: {
               type: Type.OBJECT,
               properties: {
-                trait: { type: Type.STRING, description: "성격 특성 키워드" },
+                trait: { type: Type.STRING, description: "성격 특성 키워드 (예: 창의성, 사회성 등)" },
                 score: { type: Type.NUMBER, description: "점수 (0-100)" },
                 description: { type: Type.STRING, description: "상세 설명" }
               }
@@ -54,7 +52,6 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     }
   });
 
-  // response.text는 메서드가 아니라 getter 속성입니다.
   const text = response.text;
   if (!text) throw new Error("분석 데이터를 받지 못했습니다.");
 
@@ -67,6 +64,7 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
 };
 
 export const createCounselorChat = (result: AnalysisResult): Chat => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = 'gemini-3-pro-preview';
   
   const systemInstruction = `당신은 따뜻하고 공감 능력이 뛰어난 전문 AI 심리 상담사 '마인드 가이드'입니다. 

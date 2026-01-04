@@ -2,11 +2,11 @@ import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
-  // process.env.API_KEY는 Vite 빌드 시 실제 값으로 치환됩니다.
+  // Vite의 define 설정에 의해 빌드 시 실제 API 키 값으로 치환됩니다.
   const apiKey = process.env.API_KEY;
   
-  if (!apiKey || apiKey.length < 10) {
-    throw new Error("API 키를 찾을 수 없습니다. 환경 변수 설정에 API_KEY가 등록되어 있는지, 그리고 index.html에 importmap이 제거되었는지 확인해주세요.");
+  if (!apiKey || apiKey === "" || apiKey === "undefined") {
+    throw new Error("API 키가 설정되지 않았습니다. 프로젝트 대시보드의 '환경 변수' 설정에서 API_KEY가 올바르게 입력되었는지, 그리고 index.html에서 importmap이 제거되었는지 확인 후 'Deploy'를 다시 진행해 주세요.");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -67,8 +67,8 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
 };
 
 export const createCounselorChat = (result: AnalysisResult): Chat => {
-  const apiKey = process.env.API_KEY;
-  const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+  const apiKey = process.env.API_KEY || '';
+  const ai = new GoogleGenAI({ apiKey });
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {

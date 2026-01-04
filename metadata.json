@@ -1,0 +1,7 @@
+{
+  "name": "MindSketch: AI Art Therapy",
+  "description": "An AI-powered psychological analysis tool using HTP (House-Tree-Person) drawing tests to provide deep insights into your personality and emotional state.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

@@ -1,9 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, X, Loader2 } from 'lucide-react';
-import { Chat, GenerateContentResponse } from '@google/genai';
 import { AnalysisResult } from '../types';
-import { createCounselorChat } from '../services/geminiService';
+import { GoogleGenAI } from "@google/genai";
 
 interface CounselorChatProps {
   result: AnalysisResult;
@@ -21,45 +20,47 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [chatSession, setChatSession] = useState<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setChatSession(createCounselorChat(result));
-  }, [result]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || !chatSession || isTyping) return;
+    if (!input.trim() || isTyping) return;
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    const newMessages: Message[] = [...messages, { role: 'user', text: userMessage }];
+    setMessages(newMessages);
     setIsTyping(true);
 
     try {
-      const responseStream = await chatSession.sendMessageStream({ message: userMessage });
+      // Initialize Gemini SDK with API key from environment
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
-      let fullText = '';
-      setMessages(prev => [...prev, { role: 'model', text: '' }]);
+      // Use generateContent to handle conversation history with a system instruction
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: newMessages.map(m => ({
+          role: m.role,
+          parts: [{ text: m.text }]
+        })),
+        config: {
+          systemInstruction: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 따뜻하게 공감해주고 위로해주는 미술 치료 상담사입니다. 답변은 한국어로 친절하게 작성하세요.`
+        }
+      });
 
-      for await (const chunk of responseStream) {
-        const c = chunk as GenerateContentResponse;
-        const partText = c.text || '';
-        fullText += partText;
-        
-        setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { role: 'model', text: fullText };
-          return newMessages;
-        });
+      const modelText = response.text;
+
+      if (modelText) {
+        setMessages(prev => [...prev, { role: 'model', text: modelText }]);
+      } else {
+        throw new Error("응답을 받지 못했습니다.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'model', text: '죄송해요, 잠시 대화 연결이 원활하지 않아요. 다시 말씀해 주시겠어요?' }]);
+      setMessages(prev => [...prev, { role: 'model', text: `죄송해요, 오류가 발생했어요: ${error.message}. 잠시 후 다시 시도해 주세요.` }]);
     } finally {
       setIsTyping(false);
     }

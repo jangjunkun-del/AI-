@@ -1,17 +1,9 @@
-import { GoogleGenAI, Type, Chat } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
+// HTP (House-Tree-Person) Drawing analysis using Gemini 3 Pro
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
-  // Vite의 define 설정에 의해 빌드 시 실제 API 키 값으로 치환됩니다.
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey || apiKey === "" || apiKey === "undefined") {
-    throw new Error("API 키가 설정되지 않았습니다. 프로젝트 대시보드의 '환경 변수' 설정에서 API_KEY가 올바르게 입력되었는지, 그리고 index.html에서 importmap이 제거되었는지 확인 후 'Deploy'를 다시 진행해 주세요.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
-  const modelName = "gemini-3-pro-preview";
-  
   const houseBase64 = data.house?.split(',')[1];
   const treeBase64 = data.tree?.split(',')[1];
   const personBase64 = data.person?.split(',')[1];
@@ -20,12 +12,18 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     throw new Error("모든 그림(집, 나무, 사람)을 그려주셔야 분석이 가능합니다.");
   }
 
+  const prompt = "당신은 전문 미술 치료사입니다. 제공된 HTP 그림(집, 나무, 사람 순서)을 분석하여 심리 분석 결과를 한국어로 제공하세요. 반드시 JSON 형식을 엄격히 지켜주세요. summary, personalityTraits (trait, score, description 포함), emotionalState, advice, keyInsights 필드를 포함해야 합니다.";
+
   try {
+    // Initialize GoogleGenAI with the API key from environment variables
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Call generateContent with multimodal parts (text prompt and 3 drawings)
     const response = await ai.models.generateContent({
-      model: modelName,
+      model: 'gemini-3-pro-preview',
       contents: {
         parts: [
-          { text: "당신은 전문 미술 치료사입니다. 제공된 HTP 그림(집, 나무, 사람 순서)을 분석하여 심리 분석 결과를 한국어로 제공하세요. 반드시 JSON 형식을 엄격히 지켜주세요." },
+          { text: prompt },
           { inlineData: { mimeType: "image/png", data: houseBase64 } },
           { inlineData: { mimeType: "image/png", data: treeBase64 } },
           { inlineData: { mimeType: "image/png", data: personBase64 } },
@@ -36,21 +34,36 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            summary: { type: Type.STRING },
+            summary: {
+              type: Type.STRING,
+              description: "전체적인 심리 분석 요약"
+            },
             personalityTraits: {
               type: Type.ARRAY,
               items: {
                 type: Type.OBJECT,
                 properties: {
-                  trait: { type: Type.STRING },
-                  score: { type: Type.NUMBER },
-                  description: { type: Type.STRING }
-                }
-              }
+                  trait: { type: Type.STRING, description: "성격 특성 키워드" },
+                  score: { type: Type.NUMBER, description: "0-100 사이의 점수" },
+                  description: { type: Type.STRING, description: "해당 특성에 대한 상세 설명" }
+                },
+                required: ["trait", "score", "description"]
+              },
+              description: "성격 지형도를 위한 주요 심리 기제 분석"
             },
-            emotionalState: { type: Type.STRING },
-            advice: { type: Type.STRING },
-            keyInsights: { type: Type.ARRAY, items: { type: Type.STRING } }
+            emotionalState: {
+              type: Type.STRING,
+              description: "현재의 정서적 상태 분석 보고"
+            },
+            advice: {
+              type: Type.STRING,
+              description: "심리적 조언 및 가이드라인"
+            },
+            keyInsights: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "분석에서 도출된 핵심 인사이트 목록"
+            }
           },
           required: ["summary", "personalityTraits", "emotionalState", "advice", "keyInsights"]
         }
@@ -59,20 +72,11 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
 
     const text = response.text;
     if (!text) throw new Error("AI 응답 데이터가 없습니다.");
+    
+    // Parse the JSON string directly from the response text
     return JSON.parse(text.trim()) as AnalysisResult;
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    throw new Error(`심리 분석 도중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+    console.error("Analysis Error:", error);
+    throw new Error(`심리 분석 도중 오류가 발생했습니다: ${error.message}`);
   }
-};
-
-export const createCounselorChat = (result: AnalysisResult): Chat => {
-  const apiKey = process.env.API_KEY || '';
-  const ai = new GoogleGenAI({ apiKey });
-  return ai.chats.create({
-    model: 'gemini-3-pro-preview',
-    config: {
-      systemInstruction: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 따뜻하게 공감해주고 위로해주는 미술 치료 상담사입니다. 답변은 한국어로 친절하게 작성하세요.`,
-    },
-  });
 };

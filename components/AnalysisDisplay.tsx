@@ -99,24 +99,28 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, onRestart }) 
         </div>
       </div>
 
-      {/* Actionable Advice Section */}
+      {/* Actionable Advice Section - 세로 배치로 개선 */}
       <section className="bg-indigo-600 rounded-[5rem] p-16 text-white shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.1),_transparent_50%)]"></div>
-        <div className="relative z-10 flex flex-col md:flex-row gap-16 items-center">
-          <div className="flex-1 space-y-10">
-            <div className="flex items-center gap-8">
-              <div className="p-6 bg-white rounded-[2rem] shadow-2xl rotate-3 group-hover:rotate-0 transition-transform"><AlertCircle className="text-indigo-600" size={48} /></div>
+        <div className="relative z-10 flex flex-col items-center gap-12 text-center">
+          <div className="space-y-10 max-w-4xl">
+            <div className="flex flex-col items-center gap-6">
+              <div className="p-6 bg-white rounded-[2rem] shadow-2xl rotate-3 group-hover:rotate-0 transition-transform w-fit">
+                <AlertCircle className="text-indigo-600" size={48} />
+              </div>
               <h3 className="text-5xl font-black tracking-tight">마음 가이드</h3>
             </div>
             <p className="text-indigo-50 text-3xl leading-relaxed font-black break-keep">
               {result.advice}
             </p>
           </div>
+          
           <button
             onClick={() => setShowChat(true)}
-            className="no-print shrink-0 px-12 py-8 bg-slate-900 text-white hover:bg-black rounded-[2.5rem] transition-all font-black text-2xl shadow-2xl active:scale-95 flex items-center gap-5"
+            className="no-print px-16 py-8 bg-slate-900 text-white hover:bg-black rounded-[2.5rem] transition-all font-black text-2xl shadow-2xl active:scale-95 flex items-center gap-5 group/btn"
           >
-            <MessageCircle size={32} /> 상담사와 대화하기
+            <MessageCircle size={32} className="group-hover/btn:scale-110 transition-transform" />
+            AI 상담사와 대화하기
           </button>
         </div>
       </section>

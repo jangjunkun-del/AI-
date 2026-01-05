@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Palette, ArrowRight, Loader2, Info, History, Trash2, AlertCircle } from 'lucide-react';
 import DrawingBoard from './components/DrawingBoard';
@@ -66,7 +65,6 @@ const App: React.FC = () => {
       changeStep('result');
     } catch (err: any) {
       console.error("Analysis failed:", err);
-      // JSON 형태의 에러라면 메시지만 추출, 아니면 원문 사용
       let displayError = err.message;
       try {
         const parsed = JSON.parse(err.message);
@@ -106,12 +104,12 @@ const App: React.FC = () => {
               <Palette className="text-white" size={22} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none">마인드스케치</h1>
+              <p className="text-xl font-black text-slate-900 tracking-tighter leading-none">마인드스케치</p>
               <span className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em]">MindSketch AI</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <nav className="flex items-center gap-3">
             {history.length > 0 && (
               <button 
                 onClick={() => changeStep('history')} 
@@ -124,7 +122,7 @@ const App: React.FC = () => {
                 <History size={16} /> <span className="hidden sm:inline">나의 이력</span>
               </button>
             )}
-          </div>
+          </nav>
         </div>
       </header>
 
@@ -152,15 +150,17 @@ const App: React.FC = () => {
         )}
 
         {step === 'intro' && (
-          <div className="max-w-5xl mx-auto space-y-24 py-16 md:py-32">
+          <article className="max-w-5xl mx-auto space-y-24 py-16 md:py-32">
             <div className="text-center space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-              <div className="inline-block px-8 py-2.5 bg-indigo-50 text-indigo-600 text-[11px] font-black rounded-full uppercase tracking-[0.3em] border border-indigo-100 shadow-sm">Advanced AI Art Therapy</div>
-              <h2 className="text-5xl md:text-8xl lg:text-[10rem] font-black text-slate-900 leading-[1.15] md:leading-[1.0] tracking-tight break-keep px-4">
-                말하지 못한 마음,<br className="hidden md:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-500">그림에 담다.</span>
-              </h2>
+              <header>
+                <div className="inline-block px-8 py-2.5 bg-indigo-50 text-indigo-600 text-[11px] font-black rounded-full uppercase tracking-[0.3em] border border-indigo-100 shadow-sm mb-6">Advanced AI Art Therapy</div>
+                <h1 className="text-5xl md:text-8xl lg:text-[10rem] font-black text-slate-900 leading-[1.15] md:leading-[1.0] tracking-tight break-keep px-4">
+                  AI 그림 심리 검사,<br className="hidden md:block" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-500">당신의 마음을 스캔합니다.</span>
+                </h1>
+              </header>
               <p className="text-slate-500 text-xl md:text-2xl max-w-2xl mx-auto leading-relaxed break-keep font-medium px-6">
-                HTP(집-나무-사람) 투사 검사를 통해 당신의 무의식을 탐험해 보세요. 인공지능이 전문적인 심리 통찰을 제공합니다.
+                전문적인 HTP(집-나무-사람) 투사 검사를 AI로 경험하세요. 그림 속에 담긴 무의식을 과학적으로 분석하고 따뜻한 심리 조언을 제공합니다.
               </p>
               <div className="pt-8">
                 <button 
@@ -171,13 +171,13 @@ const App: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </article>
         )}
 
         {step === 'history' && (
-          <div className="max-w-4xl mx-auto space-y-16 py-20 animate-in slide-in-from-right duration-700">
+          <section className="max-w-4xl mx-auto space-y-16 py-20 animate-in slide-in-from-right duration-700">
             <div className="flex items-center justify-between px-4">
-              <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">나의 기록들</h2>
+              <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">나의 심리 분석 기록</h2>
               <button onClick={() => changeStep('intro')} className="px-6 py-3 rounded-2xl bg-white border border-slate-200 font-black text-slate-600 hover:bg-slate-50">닫기</button>
             </div>
             {history.length === 0 ? (
@@ -195,12 +195,12 @@ const App: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
+          </section>
         )}
 
-        {step === 'house' && <DrawingBoard title="집을 그려보세요" instruction="당신이 꿈꾸는 집이나 마음속에 떠오르는 집을 자유롭게 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, house: img})); changeStep('tree'); }} />}
-        {step === 'tree' && <DrawingBoard title="나무를 그려보세요" instruction="한 그루의 나무를 그려주세요. 뿌리, 줄기, 가지 어디든 자유롭게 표현하세요." onComplete={(img) => { setDrawings(p => ({...p, tree: img})); changeStep('person'); }} />}
-        {step === 'person' && <DrawingBoard title="사람을 그려보세요" instruction="어떤 모습의 사람이든 괜찮습니다. 전체적인 모습을 그려보세요." onComplete={handlePersonComplete} />}
+        {step === 'house' && <DrawingBoard title="집(House)을 그려보세요" instruction="당신이 살고 싶거나 떠오르는 집을 그려주세요. 집은 당신의 가정생활과 자아를 상징합니다." onComplete={(img) => { setDrawings(p => ({...p, house: img})); changeStep('tree'); }} />}
+        {step === 'tree' && <DrawingBoard title="나무(Tree)를 그려보세요" instruction="한 그루의 나무를 그려주세요. 나무는 당신의 무의식적 자아와 성장을 의미합니다." onComplete={(img) => { setDrawings(p => ({...p, tree: img})); changeStep('person'); }} />}
+        {step === 'person' && <DrawingBoard title="사람(Person)을 그려보세요" instruction="어떤 모습의 사람이든 괜찮습니다. 사람 그림은 당신의 현실적인 자아상과 대인관계를 보여줍니다." onComplete={handlePersonComplete} />}
         {step === 'analyzing' && renderLoading()}
         {step === 'result' && result && <AnalysisDisplay result={result} onRestart={startTest} />}
       </main>

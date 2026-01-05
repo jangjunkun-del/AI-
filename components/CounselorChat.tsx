@@ -36,6 +36,7 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
     setIsTyping(true);
 
     try {
+      // 호출 직전 새 인스턴스 생성
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const chat = ai.chats.create({
@@ -45,9 +46,6 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
         }
       });
 
-      // 대화 흐름 전달을 위해 전체 히스토리 기반으로 메시지 전송
-      // sendMessage는 마지막 메시지만 받으므로 이전 대화는 chat history로 관리 가능하지만
-      // 여기서는 간단하게 마지막 질문을 던집니다.
       const response = await chat.sendMessage({ message: userText });
       const modelText = response.text;
 

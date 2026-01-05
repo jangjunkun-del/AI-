@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Palette, ArrowRight, Loader2, CloudRain, Sun, Wind, History, Trash2, Calendar, Share2, Info, Mail, ExternalLink } from 'lucide-react';
+import { Sparkles, Palette, ArrowRight, Loader2, Share2, Info, History, Trash2, Key } from 'lucide-react';
 import DrawingBoard from './components/DrawingBoard';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
@@ -13,11 +13,28 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isKeySelected, setIsKeySelected] = useState<boolean>(true); // 기본값 true, 체크 후 변경
 
   useEffect(() => {
+    const checkKey = async () => {
+      // aistudio 환경에서 키 선택 여부 확인
+      if (window.aistudio) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setIsKeySelected(selected);
+      }
+    };
+    checkKey();
+
     const saved = localStorage.getItem('mindsketch_history');
     if (saved) setHistory(JSON.parse(saved));
   }, []);
+
+  const handleOpenKeySelection = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setIsKeySelected(true); // 선택 후 즉시 앱 진행
+    }
+  };
 
   const changeStep = (newStep: TestStep) => {
     setIsTransitioning(true);
@@ -54,7 +71,7 @@ const App: React.FC = () => {
       }
     } else {
       await navigator.clipboard.writeText(window.location.href);
-      alert('링크가 복사되었습니다. 친구에게 전달해 보세요!');
+      alert('링크가 복사되었습니다!');
     }
   };
 
@@ -88,6 +105,39 @@ const App: React.FC = () => {
     }
   };
 
+  // API 키가 선택되지 않았을 때 보여줄 화면
+  if (!isKeySelected) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 space-y-8 animate-in zoom-in duration-500">
+          <div className="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Key size={48} />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 leading-tight">Gemini AI 연결이 필요합니다</h2>
+          <p className="text-slate-500 font-medium break-keep">
+            정확한 심리 분석을 위해 Gemini API 키를 연결해주세요. 유료 프로젝트의 API 키가 필요할 수 있습니다.
+          </p>
+          <div className="space-y-4 pt-4">
+            <button 
+              onClick={handleOpenKeySelection}
+              className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+            >
+              API 키 선택하기
+            </button>
+            <a 
+              href="https://ai.google.dev/gemini-api/docs/billing" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block text-sm text-indigo-500 font-bold hover:underline"
+            >
+              결제 및 API 키 안내 보기
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const renderLoading = () => (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-8 space-y-12 animate-in fade-in zoom-in duration-1000">
       <div className="relative">
@@ -99,8 +149,7 @@ const App: React.FC = () => {
       <div className="space-y-4">
         <h2 className="text-4xl font-black text-slate-900 tracking-tight">당신의 마음을 읽고 있습니다</h2>
         <p className="text-slate-500 text-xl max-w-sm mx-auto leading-relaxed break-keep font-medium">
-          선 하나하나에 담긴 당신의 무의식을<br/>
-          따뜻한 시선으로 분석하고 있습니다.
+          선 하나하나에 담긴 당신의 무의식을 분석하고 있습니다.
         </p>
       </div>
     </div>

@@ -5,8 +5,6 @@ export const onRequestPost = async (context: any) => {
   try {
     const { house, tree, person } = await context.request.json();
     
-    // Cloudflare Secret에서 API 키를 가져옵니다. 
-    // 환경에 따라 env.API_KEY 또는 process.env.API_KEY를 참조합니다.
     const apiKey = context.env.API_KEY || process.env.API_KEY;
 
     if (!apiKey) {
@@ -22,8 +20,9 @@ export const onRequestPost = async (context: any) => {
     내담자의 그림에서 나타나는 특징적인 요소(선의 세기, 위치, 문이나 창문의 유무, 나무의 모양 등)를 포착하여 무의식적인 심리 상태를 심층적으로 분석해 주세요. 
     따뜻하고 공감적인 말투를 사용하되, 전문적인 통찰력을 잃지 마세요.`;
 
+    // 쿼터 문제를 해결하기 위해 flash 모델로 변경
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           parts: [
@@ -69,7 +68,11 @@ export const onRequestPost = async (context: any) => {
     });
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    let errorMessage = error.message;
+    if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+      errorMessage = "현재 사용자가 많아 API 할당량이 초과되었습니다. 약 1분 후 다시 시도해 주세요.";
+    }
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

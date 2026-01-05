@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Palette, ArrowRight, Loader2, Info, History, Trash2 } from 'lucide-react';
+import { Sparkles, Palette, ArrowRight, Loader2, Info, History, Trash2, AlertCircle } from 'lucide-react';
 import DrawingBoard from './components/DrawingBoard';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
@@ -65,7 +66,16 @@ const App: React.FC = () => {
       changeStep('result');
     } catch (err: any) {
       console.error("Analysis failed:", err);
-      setError(err.message || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
+      // JSON 형태의 에러라면 메시지만 추출, 아니면 원문 사용
+      let displayError = err.message;
+      try {
+        const parsed = JSON.parse(err.message);
+        if (parsed.error && parsed.error.message) {
+          displayError = parsed.error.message;
+        }
+      } catch (e) {}
+      
+      setError(displayError || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
       changeStep('intro');
     }
   };
@@ -120,12 +130,24 @@ const App: React.FC = () => {
 
       <main className={`flex-1 container mx-auto px-4 pb-24 transition-all duration-500 ease-in-out ${isTransitioning ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
         {error && (
-          <div className="max-w-xl mx-auto mt-8 p-6 bg-rose-50 border border-rose-100 text-rose-600 rounded-[2rem] text-sm flex items-start gap-4 animate-in slide-in-from-top-4 font-bold shadow-md">
-            <Info size={24} className="shrink-0 mt-0.5" /> 
-            <div className="flex-1">
-              <p className="text-base mb-1">분석 중 오류가 발생했습니다:</p>
-              <p className="opacity-80 font-mono text-xs bg-white/50 p-2 rounded-lg break-all">{error}</p>
+          <div className="max-w-2xl mx-auto mt-8 p-8 bg-rose-50 border-2 border-rose-100 text-rose-700 rounded-[2.5rem] animate-in slide-in-from-top-4 shadow-xl">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-rose-100 p-3 rounded-2xl">
+                <AlertCircle size={28} className="text-rose-600" />
+              </div>
+              <h3 className="text-xl font-black">안내가 필요합니다</h3>
             </div>
+            <div className="bg-white/60 p-5 rounded-2xl border border-rose-100 text-sm md:text-base leading-relaxed break-keep font-medium">
+              {error.includes("quota") || error.includes("429") || error.includes("limit") 
+                ? "무료 AI 분석 할당량이 일시적으로 소진되었습니다. 약 1분 정도 기다린 후에 다시 시도해 주시면 감사하겠습니다."
+                : error}
+            </div>
+            <button 
+              onClick={() => setError(null)}
+              className="mt-6 w-full py-4 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 transition-colors shadow-lg shadow-rose-100"
+            >
+              확인
+            </button>
           </div>
         )}
 

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, X, Loader2 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 import { AnalysisResult } from '../types';
 
 interface Message {
@@ -35,36 +36,27 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
     setIsTyping(true);
 
     try {
-      // 대화 내역 구성
-      const contents = newMessages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }]
-      }));
-
-      const requestBody = {
-        contents,
-        system_instruction: {
-          parts: [{ text: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 공감해주는 따뜻한 미술 치료 상담사입니다. 한국어로 친절하게 답변하세요.` }]
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      const chat = ai.chats.create({
+        model: 'gemini-3-flash-preview',
+        config: {
+          systemInstruction: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 공감해주는 따뜻한 미술 치료 상담사입니다. 한국어로 친절하게 답변하세요.`,
         }
-      };
-
-      // 내부 API 프록시 호출
-      const response = await fetch("/api/gemini?model=gemini-3-pro-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) throw new Error("서버와의 통신이 원활하지 않습니다.");
-
-      const data = await response.json();
-      const modelText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      // 대화 흐름 전달을 위해 전체 히스토리 기반으로 메시지 전송
+      // sendMessage는 마지막 메시지만 받으므로 이전 대화는 chat history로 관리 가능하지만
+      // 여기서는 간단하게 마지막 질문을 던집니다.
+      const response = await chat.sendMessage({ message: userText });
+      const modelText = response.text;
 
       if (modelText) {
         setMessages(prev => [...prev, { role: 'model', text: modelText }]);
       }
     } catch (error: any) {
-      setMessages(prev => [...prev, { role: 'model', text: "상담 중 오류가 발생했습니다. 잠시 후 다시 말씀해 주세요." }]);
+      console.error("Chat Error:", error);
+      setMessages(prev => [...prev, { role: 'model', text: "상담 중 잠시 연결이 원활하지 않았습니다. 다시 말씀해 주시겠어요?" }]);
     } finally {
       setIsTyping(false);
     }

@@ -1,4 +1,5 @@
 
+import { GoogleGenAI } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
@@ -10,43 +11,35 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     throw new Error("모든 그림(집, 나무, 사람)을 그려주셔야 분석이 가능합니다.");
   }
 
+  // 가이드라인에 따른 SDK 초기화
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const prompt = "당신은 전문 미술 치료사입니다. 제공된 HTP 그림(집, 나무, 사람 순서)을 분석하여 심리 분석 결과를 한국어로 제공하세요. 반드시 JSON 형식을 엄격히 지켜주세요. summary, personalityTraits (trait, score, description 포함), emotionalState, advice, keyInsights 필드를 포함해야 합니다.";
 
-  // Google REST API 규격에 맞춘 요청 데이터 구조
-  const requestBody = {
-    contents: [{
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: "image/png", data: houseBase64 } },
-        { inline_data: { mime_type: "image/png", data: treeBase64 } },
-        { inline_data: { mime_type: "image/png", data: personBase64 } },
-      ]
-    }],
-    generationConfig: {
-      response_mime_type: "application/json"
-    }
-  };
-
   try {
-    // 내부 API 프록시 호출 (SDK 사용 안 함)
-    const response = await fetch("/api/gemini?model=gemini-3-pro-preview", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: "image/png", data: houseBase64 } },
+            { inlineData: { mimeType: "image/png", data: treeBase64 } },
+            { inlineData: { mimeType: "image/png", data: personBase64 } },
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `분석 실패 (${response.status})`);
-    }
-
-    const resultData = await response.json();
-    const text = resultData.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = response.text;
+    if (!text) throw new Error("AI로부터 분석 결과를 받지 못했습니다.");
     
-    if (!text) throw new Error("AI 응답 데이터가 없습니다.");
     return JSON.parse(text.trim()) as AnalysisResult;
   } catch (error: any) {
-    console.error("Analysis Error:", error);
+    console.error("Gemini Analysis Error:", error);
     throw new Error(error.message || "심리 분석 도중 오류가 발생했습니다.");
   }
 };

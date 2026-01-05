@@ -3,7 +3,9 @@ export const onRequestPost = async (ctx: { request: Request; env: { API_KEY: str
   const apiKey = ctx.env.API_KEY;
   
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "Cloudflare 환경변수 API_KEY가 설정되지 않았습니다." }), {
+    return new Response(JSON.stringify({ 
+      error: "API_KEY가 설정되지 않았습니다. Cloudflare Pages 설정에서 API_KEY 환경변수를 확인해주세요." 
+    }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
@@ -14,17 +16,17 @@ export const onRequestPost = async (ctx: { request: Request; env: { API_KEY: str
     const { searchParams } = new URL(ctx.request.url);
     const model = searchParams.get("model") || "gemini-3-pro-preview";
     
-    // Google Gemini API REST 엔드포인트 호출
-    const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    // Google Gemini REST API 엔드포인트
+    const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-    const response = await fetch(googleApiUrl, {
+    const response = await fetch(googleUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    const result = await response.text();
-    return new Response(result, {
+    const data = await response.text();
+    return new Response(data, {
       status: response.status,
       headers: { "Content-Type": "application/json" },
     });

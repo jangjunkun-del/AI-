@@ -35,7 +35,7 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
     setIsTyping(true);
 
     try {
-      // 대화 기록을 Gemini API 규격에 맞춰 변환
+      // 대화 내역 구성
       const contents = newMessages.map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
@@ -44,17 +44,18 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
       const requestBody = {
         contents,
         system_instruction: {
-          parts: [{ text: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 따뜻하게 공감해주는 미술 치료 상담사입니다. 한국어로 친절하게 답변하세요.` }]
+          parts: [{ text: `당신은 분석 결과(${result.summary})를 바탕으로 내담자의 마음을 공감해주는 따뜻한 미술 치료 상담사입니다. 한국어로 친절하게 답변하세요.` }]
         }
       };
 
+      // 내부 API 프록시 호출
       const response = await fetch("/api/gemini?model=gemini-3-pro-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) throw new Error("서버 응답 오류");
+      if (!response.ok) throw new Error("서버와의 통신이 원활하지 않습니다.");
 
       const data = await response.json();
       const modelText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -63,7 +64,7 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
         setMessages(prev => [...prev, { role: 'model', text: modelText }]);
       }
     } catch (error: any) {
-      setMessages(prev => [...prev, { role: 'model', text: "죄송합니다. 일시적인 연결 오류가 발생했습니다." }]);
+      setMessages(prev => [...prev, { role: 'model', text: "상담 중 오류가 발생했습니다. 잠시 후 다시 말씀해 주세요." }]);
     } finally {
       setIsTyping(false);
     }
@@ -96,7 +97,7 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
               </div>
             </div>
           ))}
-          {isTyping && <div className="text-slate-400 text-xs animate-pulse ml-11">상담사가 답변을 작성 중입니다...</div>}
+          {isTyping && <div className="text-slate-400 text-xs animate-pulse ml-11 flex items-center gap-2"><Loader2 size={12} className="animate-spin" /> 상담사가 생각 중입니다...</div>}
           <div ref={messagesEndRef} />
         </div>
 

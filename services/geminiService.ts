@@ -12,7 +12,7 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
 
   const prompt = "당신은 전문 미술 치료사입니다. 제공된 HTP 그림(집, 나무, 사람 순서)을 분석하여 심리 분석 결과를 한국어로 제공하세요. 반드시 JSON 형식을 엄격히 지켜주세요. summary, personalityTraits (trait, score, description 포함), emotionalState, advice, keyInsights 필드를 포함해야 합니다.";
 
-  // Gemini REST API 규격에 맞춘 요청 바디
+  // Google REST API 규격에 맞춘 요청 데이터 구조
   const requestBody = {
     contents: [{
       parts: [
@@ -28,7 +28,7 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
   };
 
   try {
-    // 우리가 만든 Cloudflare Function 프록시 호출
+    // 내부 API 프록시 호출 (SDK 사용 안 함)
     const response = await fetch("/api/gemini?model=gemini-3-pro-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,15 +36,14 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`분석 요청 실패: ${errorText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `분석 실패 (${response.status})`);
     }
 
     const resultData = await response.json();
     const text = resultData.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!text) throw new Error("AI로부터 유효한 응답을 받지 못했습니다.");
-    
+    if (!text) throw new Error("AI 응답 데이터가 없습니다.");
     return JSON.parse(text.trim()) as AnalysisResult;
   } catch (error: any) {
     console.error("Analysis Error:", error);

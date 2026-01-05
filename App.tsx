@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Palette, ArrowRight, Loader2, Share2, Info, History, Trash2, Key, ShieldCheck } from 'lucide-react';
+import { Sparkles, Palette, ArrowRight, Loader2, Info, History, Trash2 } from 'lucide-react';
 import DrawingBoard from './components/DrawingBoard';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
@@ -13,62 +12,11 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isKeySelected, setIsKeySelected] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const checkKeyStatus = async () => {
-      // 1. AI Studio 환경 체크 (가장 높은 우선순위)
-      // @ts-ignore
-      if (window.aistudio) {
-        try {
-          // @ts-ignore
-          const hasKey = await window.aistudio.hasSelectedApiKey();
-          if (hasKey) {
-            setIsKeySelected(true);
-            return;
-          }
-        } catch (e) {
-          console.debug("AI Studio key check failed, falling back to ENV");
-        }
-      }
-
-      // 2. 환경 변수 체크 (빌드 타임에 주입된 경우)
-      const envKey = process.env.API_KEY;
-      if (envKey && envKey !== "undefined" && envKey !== "") {
-        setIsKeySelected(true);
-      } else {
-        // 3. 키가 없으면 선택 UI 노출
-        setIsKeySelected(false);
-      }
-    };
-    checkKeyStatus();
-
     const saved = localStorage.getItem('mindsketch_history');
     if (saved) setHistory(JSON.parse(saved));
   }, []);
-
-  const handleOpenKeySelection = async () => {
-    // @ts-ignore
-    if (window.aistudio) {
-      try {
-        // @ts-ignore
-        await window.aistudio.openSelectKey();
-        setIsKeySelected(true);
-      } catch (e) {
-        console.error("키 선택창 열기 실패:", e);
-        alert("API 키 선택 창을 열 수 없습니다.");
-      }
-    } else {
-      // 일반 브라우저 환경에서 키가 없는 경우 안내
-      const manualKey = prompt("Gemini API 키를 입력해주세요. (Cloudflare Secret은 보안상 브라우저에 직접 노출되지 않습니다)");
-      if (manualKey) {
-        // 임시로 메모리에 저장하거나 주입하는 로직 (데모용)
-        // 실제 운영 환경에서는 window.aistudio 사용 권장
-        alert("API 키가 입력되었습니다. 분석을 시작합니다.");
-        setIsKeySelected(true);
-      }
-    }
-  };
 
   const changeStep = (newStep: TestStep) => {
     setIsTransitioning(true);
@@ -117,61 +65,10 @@ const App: React.FC = () => {
       changeStep('result');
     } catch (err: any) {
       console.error("Analysis failed:", err);
-      const msg = err.message || "";
-      setError(msg);
-      
-      if (
-        msg.toLowerCase().includes("api key") || 
-        msg.toLowerCase().includes("missing") || 
-        msg.toLowerCase().includes("unauthorized")
-      ) {
-        setIsKeySelected(false);
-      }
-      
+      setError(err.message || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
       changeStep('intro');
     }
   };
-
-  if (isKeySelected === null) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-500" size={48} />
-      </div>
-    );
-  }
-
-  if (!isKeySelected) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 space-y-8 animate-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-white shadow-lg">
-            <ShieldCheck size={40} />
-          </div>
-          <div className="space-y-4">
-            <h2 className="text-2xl font-black text-slate-900 leading-tight">보안 연결이 활성화되었습니다</h2>
-            <div className="bg-slate-50 p-6 rounded-2xl text-left border border-slate-100">
-              <p className="text-slate-600 text-sm leading-relaxed break-keep">
-                현재 <strong>Cloudflare Secret</strong>으로 API 키가 보호되고 있습니다. 
-                브라우저 보안 정책상 서버의 비밀 키를 직접 읽을 수 없으므로, 
-                분석을 위해 <strong>한 번 더 API 키를 연결</strong>해 주세요.
-              </p>
-            </div>
-          </div>
-          <div className="space-y-4 pt-2">
-            <button 
-              onClick={handleOpenKeySelection}
-              className="w-full py-5 bg-indigo-600 text-white font-black text-lg rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3"
-            >
-              <Key size={20} /> API 키 연결하기
-            </button>
-            <p className="text-[11px] text-slate-400 font-medium">
-              연결된 키는 브라우저 세션 동안 분석 엔진 호출에만 사용됩니다.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const renderLoading = () => (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-8 space-y-12 animate-in fade-in zoom-in duration-1000">
@@ -184,7 +81,7 @@ const App: React.FC = () => {
       <div className="space-y-4">
         <h2 className="text-4xl font-black text-slate-900 tracking-tight">당신의 마음을 읽고 있습니다</h2>
         <p className="text-slate-500 text-xl max-w-sm mx-auto leading-relaxed break-keep font-medium">
-          그림 속에 담긴 무의식의 기호들을 AI가 심도 있게 분석 중입니다.
+          그림 속에 담긴 무의식의 기호들을 AI가 심도 있게 분석 중입니다. 잠시만 기다려 주세요.
         </p>
       </div>
     </div>
@@ -206,7 +103,14 @@ const App: React.FC = () => {
           
           <div className="flex items-center gap-3">
             {history.length > 0 && (
-              <button onClick={() => changeStep('history')} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all ${step === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm'}`}>
+              <button 
+                onClick={() => changeStep('history')} 
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all ${
+                  step === 'history' 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                  : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm'
+                }`}
+              >
                 <History size={16} /> <span className="hidden sm:inline">나의 이력</span>
               </button>
             )}
@@ -233,8 +137,14 @@ const App: React.FC = () => {
                 말하지 못한 마음,<br className="hidden md:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-500">그림에 담다.</span>
               </h2>
+              <p className="text-slate-500 text-xl md:text-2xl max-w-2xl mx-auto leading-relaxed break-keep font-medium px-6">
+                HTP(집-나무-사람) 투사 검사를 통해 당신의 무의식을 탐험해 보세요. 인공지능이 전문적인 심리 통찰을 제공합니다.
+              </p>
               <div className="pt-8">
-                <button onClick={startTest} className="group relative px-12 md:px-24 py-6 md:py-10 bg-slate-900 text-white text-2xl md:text-4xl font-black rounded-[2.5rem] md:rounded-[4rem] shadow-xl hover:bg-indigo-600 hover:-translate-y-2 transition-all active:scale-95 flex items-center gap-4 md:gap-8 mx-auto">
+                <button 
+                  onClick={startTest} 
+                  className="group relative px-12 md:px-24 py-6 md:py-10 bg-slate-900 text-white text-2xl md:text-4xl font-black rounded-[2.5rem] md:rounded-[4rem] shadow-2xl hover:bg-indigo-600 hover:-translate-y-2 transition-all active:scale-95 flex items-center gap-4 md:gap-8 mx-auto"
+                >
                   무료 분석 시작 <ArrowRight size={28} className="md:w-10 md:h-10 group-hover:translate-x-4 transition-transform" />
                 </button>
               </div>
@@ -246,7 +156,7 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto space-y-16 py-20 animate-in slide-in-from-right duration-700">
             <div className="flex items-center justify-between px-4">
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">나의 기록들</h2>
-              <button onClick={() => changeStep('intro')} className="px-6 py-3 rounded-2xl bg-white border border-slate-200 font-black text-slate-600">닫기</button>
+              <button onClick={() => changeStep('intro')} className="px-6 py-3 rounded-2xl bg-white border border-slate-200 font-black text-slate-600 hover:bg-slate-50">닫기</button>
             </div>
             {history.length === 0 ? (
               <div className="mx-4 text-center py-32 bg-white rounded-[4rem] border-4 border-dashed border-slate-100">
@@ -266,9 +176,9 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {step === 'house' && <DrawingBoard title="집을 그려보세요" instruction="안정성을 보여주는 집을 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, house: img})); changeStep('tree'); }} />}
-        {step === 'tree' && <DrawingBoard title="나무를 그려보세요" instruction="에너지를 보여주는 나무를 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, tree: img})); changeStep('person'); }} />}
-        {step === 'person' && <DrawingBoard title="사람을 그려보세요" instruction="사회적 자아인 사람을 그려주세요." onComplete={handlePersonComplete} />}
+        {step === 'house' && <DrawingBoard title="집을 그려보세요" instruction="당신이 꿈꾸는 집이나 마음속에 떠오르는 집을 자유롭게 그려주세요." onComplete={(img) => { setDrawings(p => ({...p, house: img})); changeStep('tree'); }} />}
+        {step === 'tree' && <DrawingBoard title="나무를 그려보세요" instruction="한 그루의 나무를 그려주세요. 뿌리, 줄기, 가지 어디든 자유롭게 표현하세요." onComplete={(img) => { setDrawings(p => ({...p, tree: img})); changeStep('person'); }} />}
+        {step === 'person' && <DrawingBoard title="사람을 그려보세요" instruction="어떤 모습의 사람이든 괜찮습니다. 전체적인 모습을 그려보세요." onComplete={handlePersonComplete} />}
         {step === 'analyzing' && renderLoading()}
         {step === 'result' && result && <AnalysisDisplay result={result} onRestart={startTest} />}
       </main>

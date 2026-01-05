@@ -6,6 +6,19 @@ import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
 import { analyzeDrawings } from './services/geminiService';
 
+// AI Studio API Key Selection Helper Types
+// Using interface augmentation for AIStudio and ensuring Window.aistudio matches existing environment modifiers (like readonly)
+declare global {
+  interface AIStudio {
+    hasSelectedApiKey(): Promise<boolean>;
+    openSelectKey(): Promise<void>;
+  }
+
+  interface Window {
+    readonly aistudio: AIStudio;
+  }
+}
+
 const App: React.FC = () => {
   const [step, setStep] = useState<TestStep>('intro');
   const [drawings, setDrawings] = useState<DrawingData>({});
@@ -13,17 +26,20 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isKeySelected, setIsKeySelected] = useState<boolean>(true); // 기본값 true, 체크 후 변경
+  const [isKeySelected, setIsKeySelected] = useState<boolean>(true);
 
   useEffect(() => {
-    const checkKey = async () => {
-      // aistudio 환경에서 키 선택 여부 확인
+    const checkKeyStatus = async () => {
       if (window.aistudio) {
-        const selected = await window.aistudio.hasSelectedApiKey();
-        setIsKeySelected(selected);
+        try {
+          const hasKey = await window.aistudio.hasSelectedApiKey();
+          setIsKeySelected(hasKey);
+        } catch (e) {
+          console.error("API 키 상태 확인 실패:", e);
+        }
       }
     };
-    checkKey();
+    checkKeyStatus();
 
     const saved = localStorage.getItem('mindsketch_history');
     if (saved) setHistory(JSON.parse(saved));
@@ -32,7 +48,8 @@ const App: React.FC = () => {
   const handleOpenKeySelection = async () => {
     if (window.aistudio) {
       await window.aistudio.openSelectKey();
-      setIsKeySelected(true); // 선택 후 즉시 앱 진행
+      // 가이드라인: 키 선택 트리거 후 성공으로 가정하고 진행하여 레이스 컨디션 방지
+      setIsKeySelected(true);
     }
   };
 
@@ -56,23 +73,6 @@ const App: React.FC = () => {
     const updated = history.filter(item => item.id !== id);
     setHistory(updated);
     localStorage.setItem('mindsketch_history', JSON.stringify(updated));
-  };
-
-  const shareApp = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: '마인드스케치 - AI 그림 심리 분석',
-          text: '그림을 통해 나의 심리 상태를 분석해보세요!',
-          url: window.location.href,
-        });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      alert('링크가 복사되었습니다!');
-    }
   };
 
   const startTest = () => {
@@ -101,26 +101,33 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("Analysis failed:", err);
       setError(err.message || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
+      
+      // 가이드라인: 키 관련 에러 발생 시 선택 상태 리셋하여 사용자 재인증 유도
+      if (err.message?.includes("Requested entity was not found") || err.message?.includes("API Key must be set")) {
+        setIsKeySelected(false);
+      }
+      
       changeStep('intro');
     }
   };
 
-  // API 키가 선택되지 않았을 때 보여줄 화면
+  // API 키 미선택 시 노출될 UI
   if (!isKeySelected) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
         <div className="max-w-md w-full bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 space-y-8 animate-in zoom-in duration-500">
-          <div className="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Key size={48} />
+          <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Key size={32} />
           </div>
-          <h2 className="text-3xl font-black text-slate-900 leading-tight">Gemini AI 연결이 필요합니다</h2>
-          <p className="text-slate-500 font-medium break-keep">
-            정확한 심리 분석을 위해 Gemini API 키를 연결해주세요. 유료 프로젝트의 API 키가 필요할 수 있습니다.
+          <h2 className="text-2xl font-black text-slate-900 leading-tight">Gemini AI 연결이 필요합니다</h2>
+          <p className="text-slate-500 font-medium break-keep text-sm leading-relaxed">
+            심리 분석을 시작하려면 Gemini API 키를 연결해야 합니다. 
+            유료 프로젝트의 API 키를 선택해 주세요.
           </p>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-3 pt-4">
             <button 
               onClick={handleOpenKeySelection}
-              className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+              className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95"
             >
               API 키 선택하기
             </button>
@@ -128,7 +135,7 @@ const App: React.FC = () => {
               href="https://ai.google.dev/gemini-api/docs/billing" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="block text-sm text-indigo-500 font-bold hover:underline"
+              className="block text-xs text-indigo-500 font-bold hover:underline"
             >
               결제 및 API 키 안내 보기
             </a>
@@ -170,7 +177,6 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <button onClick={shareApp} className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all"><Share2 size={20} /></button>
             {history.length > 0 && (
               <button onClick={() => changeStep('history')} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all ${step === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm'}`}>
                 <History size={16} /> <span className="hidden sm:inline">나의 이력</span>

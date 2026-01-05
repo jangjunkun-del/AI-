@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { DrawingData, AnalysisResult } from "../types";
 
 export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult> => {
@@ -11,24 +11,17 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     throw new Error("모든 그림(집, 나무, 사람)을 그려주셔야 분석이 가능합니다.");
   }
 
-  // 가이드라인: 호출 직전에 인스턴스 생성하여 process.env.API_KEY 반영
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // 가이드라인 준수: API 호출 직전에 GoogleGenAI 인스턴스 생성
+  // 이 환경에서는 window.aistudio.openSelectKey() 이후 process.env.API_KEY가 유효해집니다.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   
   const prompt = `당신은 전문 미술 치료사입니다. 제공된 3장의 HTP(House-Tree-Person) 그림을 분석하여 심리 분석 결과를 한국어로 제공하세요.
-  반드시 다음 JSON 형식을 엄격히 지켜서 응답하세요:
-  {
-    "summary": "전반적인 심리 상태 요약",
-    "personalityTraits": [
-      {"trait": "성격 특성 키워드", "score": 0-100 점수, "description": "상세 설명"}
-    ],
-    "emotionalState": "현재 느끼는 감정에 대한 상세 분석",
-    "advice": "내담자를 위한 따뜻한 조언",
-    "keyInsights": ["가장 중요한 발견점 1", "2", "3"]
-  }`;
+  내담자의 그림에서 나타나는 특징적인 요소들을 포착하여 무의식적인 심리 상태를 심층적으로 분석해 주세요.`;
 
   try {
+    // HTP 분석은 복잡한 다학제적 추론이 필요하므로 gemini-3-pro-preview 모델을 사용합니다.
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: [
         {
           parts: [
@@ -41,18 +34,55 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
       ],
       config: {
         responseMimeType: "application/json",
+        // 권장 사항: 구조화된 출력을 보장하기 위해 responseSchema를 정의합니다.
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            summary: {
+              type: Type.STRING,
+              description: "전반적인 심리 상태에 대한 한 줄 요약",
+            },
+            personalityTraits: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  trait: { type: Type.STRING },
+                  score: { type: Type.NUMBER },
+                  description: { type: Type.STRING },
+                },
+                required: ["trait", "score", "description"],
+                propertyOrdering: ["trait", "score", "description"],
+              },
+            },
+            emotionalState: {
+              type: Type.STRING,
+              description: "내담자의 현재 정서적 배경에 대한 상세 설명",
+            },
+            advice: {
+              type: Type.STRING,
+              description: "내담자에게 전하는 따뜻한 격려와 조언",
+            },
+            keyInsights: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "분석을 통해 발견된 3가지 주요 통찰",
+            },
+          },
+          required: ["summary", "personalityTraits", "emotionalState", "advice", "keyInsights"],
+        }
       }
     });
 
+    // response.text는 getter이므로 속성으로 접근합니다.
     const text = response.text;
     if (!text) throw new Error("AI로부터 분석 결과를 받지 못했습니다.");
     
     return JSON.parse(text.trim()) as AnalysisResult;
   } catch (error: any) {
     console.error("Gemini Analysis Error:", error);
-    if (error.message?.includes("entity was not found")) {
-      // 키 선택 초기화 트리거를 위해 에러를 전파
-      throw new Error("API 키가 유효하지 않거나 권한이 없습니다. 다시 선택해주세요.");
+    if (error.message?.includes("API Key must be set") || error.message?.includes("Requested entity was not found")) {
+      throw new Error("API 키가 설정되지 않았거나 만료되었습니다. 'API 키 선택하기' 버튼을 통해 연결해 주세요.");
     }
     throw new Error(error.message || "심리 분석 도중 오류가 발생했습니다.");
   }

@@ -5,9 +5,6 @@ import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
 import { analyzeDrawings } from './services/geminiService';
 
-// The aistudio object and its methods are provided by the environment.
-// Redundant declarations removed to resolve duplicate identifier and modifier mismatch errors.
-
 const App: React.FC = () => {
   const [step, setStep] = useState<TestStep>('intro');
   const [drawings, setDrawings] = useState<DrawingData>({});
@@ -15,22 +12,20 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isKeySelected, setIsKeySelected] = useState<boolean | null>(null); // null: checking, false: need selection
+  const [isKeySelected, setIsKeySelected] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkKeyStatus = async () => {
-      // @ts-ignore - aistudio is globally provided by the environment
+      // @ts-ignore
       if (window.aistudio) {
         try {
           // @ts-ignore
           const hasKey = await window.aistudio.hasSelectedApiKey();
-          setIsKeySelected(hasKey);
+          setIsKeySelected(hasKey || !!process.env.API_KEY);
         } catch (e) {
-          console.error("API 키 상태 확인 실패:", e);
-          setIsKeySelected(false);
+          setIsKeySelected(!!process.env.API_KEY);
         }
       } else {
-        // AI Studio 환경이 아닐 경우 (로컬 개발 등)
         setIsKeySelected(!!process.env.API_KEY);
       }
     };
@@ -46,11 +41,12 @@ const App: React.FC = () => {
       try {
         // @ts-ignore
         await window.aistudio.openSelectKey();
-        // 가이드라인: 키 선택 트리거 후 즉시 성공으로 가정하고 앱 진입
         setIsKeySelected(true);
       } catch (e) {
         console.error("키 선택창 열기 실패:", e);
       }
+    } else {
+      alert("이 환경에서는 API 키 선택 도구를 사용할 수 없습니다. 환경 변수를 확인해주세요.");
     }
   };
 
@@ -102,13 +98,14 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("Analysis failed:", err);
       const msg = err.message || "";
-      setError(msg || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
+      setError(msg);
       
-      // 구체적인 키 누락 에러 감지 (SDK 메시지 포함)
+      // API 키 누락 관련 모든 에러 메시지 케이스 대응
       if (
-        msg.includes("API key is missing") || 
-        msg.includes("API Key must be set") ||
-        msg.includes("Requested entity was not found")
+        msg.toLowerCase().includes("api key") || 
+        msg.toLowerCase().includes("missing") || 
+        msg.toLowerCase().includes("not found") ||
+        msg.toLowerCase().includes("unauthorized")
       ) {
         setIsKeySelected(false);
       }
@@ -117,7 +114,6 @@ const App: React.FC = () => {
     }
   };
 
-  // 초기 로딩 중
   if (isKeySelected === null) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -126,7 +122,6 @@ const App: React.FC = () => {
     );
   }
 
-  // API 키 미선택 시 노출될 UI
   if (!isKeySelected) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
@@ -137,8 +132,8 @@ const App: React.FC = () => {
           <div className="space-y-3">
             <h2 className="text-3xl font-black text-slate-900 leading-tight">심리 분석 엔진 연결</h2>
             <p className="text-slate-500 font-medium break-keep text-base leading-relaxed px-2">
-              정확한 HTP 심리 분석을 위해 Gemini AI 키를 연결해야 합니다.<br/>
-              유료 프로젝트의 API 키를 선택해 주세요.
+              Cloudflare Secret은 보안상 브라우저에서 직접 읽을 수 없습니다.<br/>
+              안전한 분석을 위해 아래 버튼을 눌러 API 키를 한 번 더 연결해 주세요.
             </p>
           </div>
           <div className="space-y-4 pt-4">

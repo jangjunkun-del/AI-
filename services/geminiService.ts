@@ -10,8 +10,13 @@ export const analyzeDrawings = async (data: DrawingData): Promise<AnalysisResult
     throw new Error("모든 그림(집, 나무, 사람)을 그려주셔야 분석이 가능합니다.");
   }
 
-  // Initialize GoogleGenAI with the API_KEY directly from environment variables.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Check if API key exists before initializing
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === "undefined") {
+    throw new Error("API key is missing. Please provide a valid API key via the selection tool.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `당신은 전문 미술 치료사입니다. 제공된 3장의 HTP(House-Tree-Person) 그림을 분석하여 심리 분석 결과를 한국어로 제공하세요.
   내담자의 그림에서 나타나는 특징적인 요소들을 포착하여 무의식적인 심리 상태를 심층적으로 분석해 주세요.`;

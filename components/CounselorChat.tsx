@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, X, Loader2 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
@@ -36,11 +35,11 @@ const CounselorChat: React.FC<CounselorChatProps> = ({ result, onClose }) => {
     setIsTyping(true);
 
     try {
-      // 가이드라인: 호출 직전 인스턴스 생성하여 최신 주입된 API 키를 반영합니다.
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      // Instantiate GoogleGenAI right before the API call as per guidelines.
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const chat = ai.chats.create({
-        // 심리 상담은 공감적 태도와 복잡한 정서 이해가 요구되므로 gemini-3-pro-preview를 사용합니다.
+        // Psychological counseling requires deep reasoning, using gemini-3-pro-preview.
         model: 'gemini-3-pro-preview',
         config: {
           systemInstruction: `당신은 내담자의 HTP 분석 결과(요약: ${result.summary}, 조언: ${result.advice})를 깊이 이해하고 있는 따뜻한 미술 치료 전문가입니다. 한국어로 친절하고 공감적인 상담을 제공하세요.`,

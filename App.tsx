@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Palette, ArrowRight, Loader2, Share2, Info, History, Trash2, Key } from 'lucide-react';
 import DrawingBoard from './components/DrawingBoard';
@@ -6,18 +5,8 @@ import AnalysisDisplay from './components/AnalysisDisplay';
 import { TestStep, DrawingData, AnalysisResult } from './types';
 import { analyzeDrawings } from './services/geminiService';
 
-// AI Studio API Key Selection Helper Types
-// Using interface augmentation for AIStudio and ensuring Window.aistudio matches existing environment modifiers (like readonly)
-declare global {
-  interface AIStudio {
-    hasSelectedApiKey(): Promise<boolean>;
-    openSelectKey(): Promise<void>;
-  }
-
-  interface Window {
-    readonly aistudio: AIStudio;
-  }
-}
+// The aistudio object and its methods are provided by the environment.
+// Redundant declarations removed to resolve duplicate identifier and modifier mismatch errors.
 
 const App: React.FC = () => {
   const [step, setStep] = useState<TestStep>('intro');
@@ -26,17 +15,23 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isKeySelected, setIsKeySelected] = useState<boolean>(true);
+  const [isKeySelected, setIsKeySelected] = useState<boolean | null>(null); // null: checking, false: need selection
 
   useEffect(() => {
     const checkKeyStatus = async () => {
+      // @ts-ignore - aistudio is globally provided by the environment
       if (window.aistudio) {
         try {
+          // @ts-ignore
           const hasKey = await window.aistudio.hasSelectedApiKey();
           setIsKeySelected(hasKey);
         } catch (e) {
           console.error("API 키 상태 확인 실패:", e);
+          setIsKeySelected(false);
         }
+      } else {
+        // AI Studio 환경이 아닐 경우 (로컬 개발 등)
+        setIsKeySelected(!!process.env.API_KEY);
       }
     };
     checkKeyStatus();
@@ -46,10 +41,16 @@ const App: React.FC = () => {
   }, []);
 
   const handleOpenKeySelection = async () => {
+    // @ts-ignore
     if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      // 가이드라인: 키 선택 트리거 후 성공으로 가정하고 진행하여 레이스 컨디션 방지
-      setIsKeySelected(true);
+      try {
+        // @ts-ignore
+        await window.aistudio.openSelectKey();
+        // 가이드라인: 키 선택 트리거 후 즉시 성공으로 가정하고 앱 진입
+        setIsKeySelected(true);
+      } catch (e) {
+        console.error("키 선택창 열기 실패:", e);
+      }
     }
   };
 
@@ -100,10 +101,15 @@ const App: React.FC = () => {
       changeStep('result');
     } catch (err: any) {
       console.error("Analysis failed:", err);
-      setError(err.message || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
+      const msg = err.message || "";
+      setError(msg || "심리 분석 중 예상치 못한 오류가 발생했습니다.");
       
-      // 가이드라인: 키 관련 에러 발생 시 선택 상태 리셋하여 사용자 재인증 유도
-      if (err.message?.includes("Requested entity was not found") || err.message?.includes("API Key must be set")) {
+      // 구체적인 키 누락 에러 감지 (SDK 메시지 포함)
+      if (
+        msg.includes("API key is missing") || 
+        msg.includes("API Key must be set") ||
+        msg.includes("Requested entity was not found")
+      ) {
         setIsKeySelected(false);
       }
       
@@ -111,33 +117,44 @@ const App: React.FC = () => {
     }
   };
 
+  // 초기 로딩 중
+  if (isKeySelected === null) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-500" size={48} />
+      </div>
+    );
+  }
+
   // API 키 미선택 시 노출될 UI
   if (!isKeySelected) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
         <div className="max-w-md w-full bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 space-y-8 animate-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Key size={32} />
+          <div className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-xl">
+            <Key size={40} className="animate-pulse" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 leading-tight">Gemini AI 연결이 필요합니다</h2>
-          <p className="text-slate-500 font-medium break-keep text-sm leading-relaxed">
-            심리 분석을 시작하려면 Gemini API 키를 연결해야 합니다. 
-            유료 프로젝트의 API 키를 선택해 주세요.
-          </p>
-          <div className="space-y-3 pt-4">
+          <div className="space-y-3">
+            <h2 className="text-3xl font-black text-slate-900 leading-tight">심리 분석 엔진 연결</h2>
+            <p className="text-slate-500 font-medium break-keep text-base leading-relaxed px-2">
+              정확한 HTP 심리 분석을 위해 Gemini AI 키를 연결해야 합니다.<br/>
+              유료 프로젝트의 API 키를 선택해 주세요.
+            </p>
+          </div>
+          <div className="space-y-4 pt-4">
             <button 
               onClick={handleOpenKeySelection}
-              className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95"
+              className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95"
             >
-              API 키 선택하기
+              지금 API 키 선택하기
             </button>
             <a 
               href="https://ai.google.dev/gemini-api/docs/billing" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="block text-xs text-indigo-500 font-bold hover:underline"
+              className="block text-sm text-indigo-500 font-bold hover:underline"
             >
-              결제 및 API 키 안내 보기
+              결제 및 API 키 안내 (Google AI Studio)
             </a>
           </div>
         </div>
@@ -156,7 +173,7 @@ const App: React.FC = () => {
       <div className="space-y-4">
         <h2 className="text-4xl font-black text-slate-900 tracking-tight">당신의 마음을 읽고 있습니다</h2>
         <p className="text-slate-500 text-xl max-w-sm mx-auto leading-relaxed break-keep font-medium">
-          선 하나하나에 담긴 당신의 무의식을 분석하고 있습니다.
+          그림 속에 담긴 무의식의 기호들을 AI가 심도 있게 분석 중입니다.
         </p>
       </div>
     </div>
@@ -192,7 +209,7 @@ const App: React.FC = () => {
             <Info size={24} className="shrink-0 mt-0.5" /> 
             <div className="flex-1">
               <p className="text-base mb-1">분석 중 오류가 발생했습니다:</p>
-              <p className="opacity-80 font-mono text-xs bg-white/50 p-2 rounded-lg">{error}</p>
+              <p className="opacity-80 font-mono text-xs bg-white/50 p-2 rounded-lg break-all">{error}</p>
             </div>
           </div>
         )}
